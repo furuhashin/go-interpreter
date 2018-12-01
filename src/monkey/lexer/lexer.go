@@ -5,7 +5,7 @@ import "monkey/token"
 type Lexer struct {
 	input        string
 	position     int  //入力中における現在の位置
-	readPosition int  // これから読み込む位置
+	readPosition int  // これから読み込む位置(初期値は0)
 	ch           byte // 現在検査中の文字
 }
 
@@ -19,6 +19,7 @@ func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.input) {
 		l.ch = 0
 	} else {
+		//文字列をインデックスで指定することができる(p7 ASCIIは１byte)
 		l.ch = l.input[l.readPosition]
 	}
 	l.position = l.readPosition
@@ -32,6 +33,7 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
+		// =がきたら次の文字をのぞき見する。次がまた=だったら==トークンとして扱う
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()
