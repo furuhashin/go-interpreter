@@ -7,13 +7,14 @@ type Token struct {
 	Literal string
 }
 
+// Literal
 const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 
 	// 識別子+リテラル
-	IDENT = "INDENT"
-	INT   = "INT"
+	IDENT = "INDENT" // add, foobr, x, y
+	INT   = "INT"    // 123456
 
 	// 演算子
 	ASSIGN   = "="

@@ -6,17 +6,19 @@ type Node interface {
 	TokenLiteral() string
 }
 
+// 文を表現する(let x = 5 みたいなやつ)
 type Statement interface {
 	Node
 	statementNode()
 }
 
+//式を表現する(5 とか)
 type Expression interface {
 	Node
 	expressionNode()
 }
 
-// 文が格納される
+// 文のスライス格納される
 type Program struct {
 	Statements []Statement
 }

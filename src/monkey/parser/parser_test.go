@@ -46,7 +46,7 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 		return false
 	}
 
-	// 型アサーション s が*ast.LetStatement型であった場合ok=trueとなる型アサーション対象(s)は抽象度が高い
+	// 型アサーション s が*ast.LetStatement型であった場合ok=trueとなる。型アサーション対象(s)は抽象度が高い
 	letStmt, ok := s.(*ast.LetStatement)
 	if !ok {
 		t.Errorf("s not *ast.LetStatement. got=%T", s)

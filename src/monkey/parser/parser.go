@@ -30,5 +30,29 @@ func (p *Parser) nextToken() {
 }
 
 func (p *Parser) ParseProgram() *ast.Program {
-	return nil
+	program := &ast.Program{}
+	program.Statements = []ast.Statement{} // ast.Statement型のスライスを格納
+
+	for p.curToken.Type != token.EOF {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			// program.Statementsにstmtを入れて、それを返す(毎回上書き？)
+			program.Statements = append(program.Statements, stmt)
+		}
+		p.nextToken()
+	}
+	return program
+}
+
+func (p *Parser) parseStatement() ast.Statement {
+	switch p.curToken.Type {
+	case token.LET:
+		// *ast.LetStatementはast.Statementのインターフェイスを満たしているためast.Statement型となる
+		return p.parseLetStatement()
+	default:
+		return nil
+	}
+}
+func (p *Parser) parseLetStatement() *ast.LetStatement {
+
 }
