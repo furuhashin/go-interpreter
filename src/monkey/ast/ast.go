@@ -31,10 +31,11 @@ func (p *Program) TokenLiteral() string {
 	}
 }
 
+// let文全体
 type LetStatement struct {
 	Token token.Token
-	Name  *Identifier
-	Value Expression
+	Name  *Identifier // 識別子
+	Value Expression  // 式
 }
 
 func (ls *LetStatement) statementNode() {}
