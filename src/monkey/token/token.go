@@ -7,7 +7,7 @@ type Token struct {
 	Literal string
 }
 
-// Literal
+// Type = IDENT Literal = "myVar" みたいな感じ
 const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
