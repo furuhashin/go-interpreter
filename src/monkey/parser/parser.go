@@ -55,6 +55,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.LET:
 		// *ast.LetStatementはast.Statementのインターフェイスを満たしているためast.Statement型となる
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
 		return nil
 	}
@@ -111,4 +113,18 @@ func (p *Parser) peekError(t token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, got %s insted",
 		t, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
+}
+func (p *Parser) parseReturnStatement() ast.Statement {
+	// 現在のトークンは'return'トークン
+	stmt := &ast.ReturnStatement{Token: p.curToken}
+
+	// curTokeが式(5,10,993322)になり、nextTokenが;になる
+	p.nextToken()
+
+	// TODO: セミコロンに遭遇するまで読み飛ばしてしまっている
+	for !p.curTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
 }
