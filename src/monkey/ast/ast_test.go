@@ -21,7 +21,7 @@ func TestString(t *testing.T) {
 			},
 		},
 	}
-
+	// '='はLetStatement.String()内でつけている
 	if program.String() != "let myVar = anotherVar;" {
 		t.Errorf("program.String() wrong. got=%q", program.String())
 	}
