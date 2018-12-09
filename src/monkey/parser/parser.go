@@ -23,6 +23,12 @@ func New(l *lexer.Lexer) *Parser {
 		l:      l,
 		errors: []string{},
 	}
+	// prefixParseFnsの初期化
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	// 構文解析関数をprefixParseFnsに登録
+	// token.IDENTが出現したらp.parseIdentifierが呼ばれる？
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+
 	// 2つのトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	//p.curToken = nil p.peekToken = 1つ目のトークン
 	p.nextToken()
@@ -30,6 +36,12 @@ func New(l *lexer.Lexer) *Parser {
 	p.nextToken()
 
 	return p
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	// ast.Expressionのほうがast.Identifierより抽象度が高い
+	// ast.Identifierはast.Expressionのインターフェイスを実装している
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
 
 func (p *Parser) nextToken() {
@@ -61,7 +73,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -144,3 +156,37 @@ func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
 }
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	// p.parseIdentifierが呼ばれる
+	// ast.Expressionが返ってくる
+	leftExp := prefix()
+
+	return leftExp
+}
+
+// ここで優先順位が決まる？
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > または <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X または !X
+	CALL        // myFunction(X)
+)
