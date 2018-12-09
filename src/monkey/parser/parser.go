@@ -5,6 +5,7 @@ import (
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
+	"strconv"
 )
 
 type Parser struct {
@@ -28,6 +29,7 @@ func New(l *lexer.Lexer) *Parser {
 	// 構文解析関数をprefixParseFnsに登録
 	// token.IDENTが出現したらp.parseIdentifierが呼ばれる？
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	// 2つのトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	//p.curToken = nil p.peekToken = 1つ目のトークン
@@ -190,3 +192,17 @@ const (
 	PREFIX      // -X または !X
 	CALL        // myFunction(X)
 )
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.curToken}
+
+	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	lit.Value = value
+
+	return lit
+}
