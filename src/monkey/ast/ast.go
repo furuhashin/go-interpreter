@@ -132,3 +132,21 @@ type IntegerLiteral struct {
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+type PrefixExpression struct {
+	Token    token.Token // 前置トークン、例えば「！」
+	Operator string      // "-"か"-"
+	Right    Expression  // 演算子の右側の式を格納 15とか
+}
+
+func (pe *PrefixExpression) expressionNode()      {}
+func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
+func (pe *PrefixExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(") //どのオペランドがその演算子に属するかわかりやすくするため
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")") //どのオペランドがその演算子に属するかわかりやすくするため
+
+	return out.String()
+}
