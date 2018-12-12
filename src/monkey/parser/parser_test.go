@@ -41,6 +41,8 @@ let foobar = 838383;
 		}
 	}
 }
+
+// ここでerrorsにmsgが格納されているかチェックする
 func checkParserErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {

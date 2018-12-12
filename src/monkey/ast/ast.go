@@ -17,6 +17,7 @@ type Statement interface {
 }
 
 //式を表現する(5 とか)
+// astがいろいろを内包するイメージ
 type Expression interface {
 	Node
 	expressionNode()
@@ -134,8 +135,8 @@ func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
 type PrefixExpression struct {
-	Token    token.Token // 前置トークン、例えば「！」
-	Operator string      // "-"か"-"
+	Token    token.Token // 前置トークン、token.goから取ってくる。例えば「！」
+	Operator string      // "-"か"!" 文字列
 	Right    Expression  // 演算子の右側の式を格納 15とか
 }
 
