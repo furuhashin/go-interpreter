@@ -98,6 +98,7 @@ func (rs *ReturnStatement) String() string {
 	return out.String()
 }
 
+// 式の構造体
 type ExpressionStatement struct {
 	Token      token.Token // 式の最初のトークン
 	Expression Expression
@@ -148,6 +149,27 @@ func (pe *PrefixExpression) String() string {
 	out.WriteString(pe.Operator)
 	out.WriteString(pe.Right.String())
 	out.WriteString(")") //どのオペランドがその演算子に属するかわかりやすくするため
+
+	return out.String()
+}
+
+type InfixExpression struct {
+	Token    token.Token //演算子トークン、例えば「+」
+	Left     Expression  //任意の式を保持できる
+	Operator string
+	Right    Expression //演算子の右側の式を格納
+}
+
+func (oe *InfixExpression) expressionNode()      {}
+func (oe *InfixExpression) TokenLiteral() string { return oe.Token.Literal }
+func (oe *InfixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(oe.Left.String())
+	out.WriteString(" " + oe.Operator + " ")
+	out.WriteString(oe.Right.String())
+	out.WriteString(")")
 
 	return out.String()
 }

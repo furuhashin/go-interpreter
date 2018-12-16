@@ -42,7 +42,7 @@ const (
 	//キーワード
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
-	TRUE     = "LET"
+	TRUE     = "TRUE"
 	FALSE    = "FALSE"
 	IF       = "IF"
 	ELSE     = "ELSE"

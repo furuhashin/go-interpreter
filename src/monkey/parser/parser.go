@@ -33,6 +33,16 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
+	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.PLUS, p.parseInfixExpression)
+	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.SLASH, p.parseInfixExpression)
+	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfix(token.EQ, p.parseInfixExpression)
+	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.GT, p.parseInfixExpression)
+
 	// 2つのトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	//p.curToken = nil p.peekToken = 1つ目のトークン
 	p.nextToken()
@@ -179,7 +189,19 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	// p.parseIdentifierが呼ばれる
 	// ast.Expressionが返ってくる
+	// 前置演算子の場合、leftという名前がよくわからない（2018-12-12）
 	leftExp := prefix()
+
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peekToken.Type]
+		if infix == nil {
+			return leftExp
+		}
+		// ここで現在のトークンが15から+に変わる
+		p.nextToken()
+		// infixはparseInfixExpression()とか
+		leftExp = infix(leftExp)
+	}
 
 	return leftExp
 }
@@ -224,5 +246,51 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	// curTokenは15に設定される
 	p.nextToken()
 	expression.Right = p.parseExpression(PREFIX)
+	return expression
+}
+
+// precedenceは「順位」という意味
+// 下に行くに連れ優先順位が上がる
+var precedence = map[token.TokenType]int{
+	token.EQ:       EQUALS,
+	token.NOT_EQ:   EQUALS,
+	token.LT:       LESSGREATER,
+	token.GT:       LESSGREATER,
+	token.PLUS:     SUM,
+	token.MINUS:    SUM,
+	token.SLASH:    PRODUCT,
+	token.ASTERISK: PRODUCT,
+}
+
+// 次のトークンタイプの優先順位のナンバーを返す
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedence[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+// 現在んのトークンタイプの優先順位のナンバーを返す
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedence[p.curToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+// 現在のトークンが中間演算子の場合parseExpression()から呼び出される
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left, // 15 + 13 の15のastが格納される
+	}
+	// + 等の中間演算子の優先順位が格納される
+	precedence := p.curPrecedence()
+	// 15 + 13 の場合現在の位置が13になる
+	p.nextToken()
+	// 13 のastが返る
+	expression.Right = p.parseExpression(precedence)
+
 	return expression
 }
