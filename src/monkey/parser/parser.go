@@ -171,6 +171,7 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
 }
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	defer untrace(trace("parseExpressionStatement"))
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
 	stmt.Expression = p.parseExpression(LOWEST)
@@ -182,6 +183,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return stmt
 }
 func (p *Parser) parseExpression(precedence int) ast.Expression {
+	defer untrace(trace("parseExpression"))
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
 		p.noPrefixParseFnError(p.curToken.Type)
@@ -192,6 +194,16 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	// 前置演算子の場合、leftという名前がよくわからない（2018-12-12）
 	leftExp := prefix()
 
+	// LOWESTとPLUSをまずは比べる。次にループ内で現在のトークンが２つ目の数字、parseExpression(PLUS)が呼ばれる
+	// ループ内の比較はPLUSとPLUSになる（1+2+3）の場合（ループ内でnextToken()を呼び出して演算子と演算子の比較にしているのがすごい）
+	// でもとのループに戻った際の比較はLOWEST（最初と変わりなし(1+2の結果は3でLOWESTみたいなイメージかな)）と2つ目のPLUSの比較になる
+	// precedenceが高いほど右に位置するトークンが現在の式と結合する(右結合力)
+	// peekPrecedenceが高いほど左に位置するトークンが現在の式と結合する(左結合力)
+	// LOWESTとPLUSを比べた場合、PLUS(peekPrecedence)のほうが高いのでトークンは左に結合する
+	// 1+2*3はどうなる？(左結合力が高い 1が2+3を吸い込み右腕として扱うこと)
+	// 1がastのleftに格納され、rightに対して再帰的に処理が行われる。新しいastのleftに2が入り、3がrightに入り、そのastが元のastのrightに格納される
+	// 1*2+3の場合は？？(右結合力が高い 3が1+2を吸い込み左腕として扱うこと)
+	// 1がastのleftに格納され,rightに2が格納され, そのastが返る。元のループに戻り、LOWWESTとPLUSの比較が行われ新しいastが作られ、leftに先程作成したastが格納され、rightに３が格納されたastが返る
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
@@ -219,6 +231,7 @@ const (
 )
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
+	defer untrace(trace("parseIntegerLiteral"))
 	lit := &ast.IntegerLiteral{Token: p.curToken}
 
 	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
@@ -238,6 +251,7 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
+	defer untrace(trace("parsePrefixExpression"))
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
@@ -270,7 +284,7 @@ func (p *Parser) peekPrecedence() int {
 	return LOWEST
 }
 
-// 現在んのトークンタイプの優先順位のナンバーを返す
+// 現在のトークンタイプの優先順位のナンバーを返す
 func (p *Parser) curPrecedence() int {
 	if p, ok := precedence[p.curToken.Type]; ok {
 		return p
@@ -280,10 +294,12 @@ func (p *Parser) curPrecedence() int {
 
 // 現在のトークンが中間演算子の場合parseExpression()から呼び出される
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	defer untrace(trace("parseInfixExpression"))
+	// (15 +) みたいなastが作成されたあと、expression.Rightに13が追加され(15 +13)のastが出来、それを返す
 	expression := &ast.InfixExpression{
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
-		Left:     left, // 15 + 13 の15のastが格納される
+		Left:     left, // 15 + 13 の15のastが格納される 1+2+3の場合は最初は1で２回めは1+2のastがastのleftに格納される
 	}
 	// + 等の中間演算子の優先順位が格納される
 	precedence := p.curPrecedence()
