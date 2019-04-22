@@ -45,6 +45,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 
@@ -282,6 +283,7 @@ var precedence = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 // 次のトークンタイプの優先順位のナンバーを返す
@@ -430,4 +432,41 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 		return nil
 	}
 	return identifiers
+}
+
+// functionにaddとかが渡される
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	// addをprefixで評価し、leftExpにいれた状態。現在は(。
+	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	exp.Arguments = p.parseCallArguments()
+	return exp
+}
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+
+	// (から1移動
+	p.nextToken()
+	// まずp.registerInfix(token.LPAREN, p.parseCallExpression)が実行される
+	// でパースされ1がargsに入る
+	args = append(args, p.parseExpression(LOWEST))
+
+	// 次のトークンがコンマだった場合
+	for p.peekTokenIs(token.COMMA) {
+		// コンマになる
+		p.nextToken()
+		// 2になる
+		p.nextToken()
+		// 2 * 3 と 4 + 5が入る
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return args
 }
