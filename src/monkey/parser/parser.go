@@ -104,6 +104,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
 
 	// 現在はletなので次はIDENTが必ず来るはずなのでチェックする
+	// ここでcurTokenがx,y,foobar等になる
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
@@ -113,12 +114,17 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	// let x と来たら次は=が来るはずなのでチェックする
+	// ここでcurTokenが'='になる
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
 	}
-	// Todo: セミコロンに遭遇するまで読みとばしてしまっている
-	// curTokenがセミコロンでない場合次のトークンに進む
-	for !p.curTokenIs(token.SEMICOLON) {
+
+	// ここでcurTokenが5,true,y等になる
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -152,15 +158,17 @@ func (p *Parser) peekError(t token.TokenType) {
 		t, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
 }
-func (p *Parser) parseReturnStatement() ast.Statement {
+
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	// 現在のトークンは'return'トークン
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 
 	// curTokeが式(5,10,993322)になり、nextTokenが;になる
 	p.nextToken()
 
-	// TODO: セミコロンに遭遇するまで読み飛ばしてしまっている
-	for !p.curTokenIs(token.SEMICOLON) {
+	stmt.ReturnValue = p.parseExpression(LOWEST)
+
+	for p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
